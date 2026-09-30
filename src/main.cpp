@@ -14,30 +14,13 @@
 int main() {
 	using namespace YOBA;
 
-	// -------------------------------- SFML window --------------------------------
-
-	// Creating window that will simulate 240x320 display, which is widely used among Arduino kids
-	// To avoid eye bleeding, let's double the rendering scale
-	constexpr static Size screenResolution { 240, 320 };
-	constexpr static float renderingScale = 2;
-
-	sf::RenderWindow SFWindow {
-		sf::VideoMode({
-			static_cast<uint32_t>(static_cast<float>(screenResolution.getWidth()) * renderingScale),
-			static_cast<uint32_t>(static_cast<float>(screenResolution.getHeight()) * renderingScale)
-		}),
-		"YOBA | Desktop demo",
-		sf::Style::None | sf::Style::Titlebar | sf::Style::Close,
-		sf::State::Windowed
-	};
-
 	// -------------------------------- YOBA renderer & rendering target --------------------------------
 
-	// Creating rendering target that encapsulates SFML sprite - it will be used by YOBA for flushing pixel data
-	// The sprite itself can be rendered later via window.draw()
+	// Creating rendering target that will simulate 240x320 display, which is widely used among Arduino kids
+	// Target itself encapsulates SFML sprite - it be rendered later via SFMLWindow.draw()
 	SFMLRenderingTarget renderingTarget {};
-	renderingTarget.setup(screenResolution);
-	renderingTarget.setRenderingScale(renderingScale);
+	renderingTarget.setup({ 240, 320 });
+	renderingTarget.setRenderingScale(2.0f);
 
 	// Creating straightforward renderer that doesn't care about CPU/RAM bearing (like RGB565 or Indexed does)
 	SFMLRenderer renderer {};
@@ -48,26 +31,26 @@ int main() {
 	// Defining some colors to style controls
 	ARGBColor blackColor { 0xFF000000 };
 	ARGBColor whiteColor { 0xFFFFFFFF };
-	ARGBColor yellowColor { 0xFFffd200 };
-	ARGBColor darkYellowColor { 0xFF997e53 };
+	ARGBColor yellowColor { 0xFFFFD200 };
+	ARGBColor darkYellowColor { 0xFF997E53 };
 
 	// Using one of the sexiest pixelated fonts ever created
 	Unscii16Font font {};
 
 	// -------------------------------- UI components  --------------------------------
 
-	// Creating an application that will store
+	// Creating main application that will take care of child elements
 	Application application {};
 	application.setRenderer(&renderer);
 	application.setBackgroundColor(&blackColor);
 
-	// Creating vertical stack layout to orient text view & button
+	// Creating vertical stack layout for text view & button
 	StackLayout rows {};
 	rows.setGap(10);
 	rows.setAlignment(Alignment::center);
 	application += &rows;
 
-	// Creating text view to display button dick size
+	// Creating text view to display dick size
 	TextView textView {};
 	textView.setFont(&font);
 	textView.setTextColor(&whiteColor);
@@ -83,7 +66,7 @@ int main() {
 
 	updateTextView();
 
-	// Creating button to increment dick size on click
+	// Creating button that will increment dick size on click
 	TextButton button {};
 	button.setSize({ 180, 32});
 	button.setCornerRadius(4);
@@ -101,7 +84,18 @@ int main() {
 
 	rows += &button;
 
-	// -------------------------------- Main loop with SFML event handling --------------------------------
+	// -------------------------------- SFML window & main loop --------------------------------
+
+	// Creating window that will be used for rendering pixel data
+	sf::RenderWindow SFWindow {
+		sf::VideoMode({
+			static_cast<uint32_t>(static_cast<float>(renderingTarget.getSize().getWidth()) * renderingTarget.getRenderingScale()),
+			static_cast<uint32_t>(static_cast<float>(renderingTarget.getSize().getHeight()) * renderingTarget.getRenderingScale())
+		}),
+		"YOBA | Desktop demo",
+		sf::Style::None | sf::Style::Titlebar | sf::Style::Close,
+		sf::State::Windowed
+	};
 
 	while (SFWindow.isOpen()) {
 		// Polling SFML events
@@ -110,8 +104,8 @@ int main() {
 				SFWindow.close();
 			}
 			else {
-				// Translating SFML events to YOBA events if they have similar nature (pointer, drag, scroll, etc.)
-				SFMLEvents::handleMouse(event, &application, renderingTarget.getRenderingScale());
+				// Translating SFML events into YOBA events if they have similar nature (pointer, drag, scroll, etc.)
+				SFMLEvents::translate(event, &application, renderingTarget.getRenderingScale());
 			}
 		}
 
@@ -119,12 +113,11 @@ int main() {
 		application.tick();
 		// Computing size of UI elements & arranging them in the screen space
 		application.updateLayout();
-		// Rendering UI on assigned rendering target (SFML window in this case)
+		// Rendering UI on assigned rendering target (SFML sprite in this case)
 		application.render();
 
-		// Rendering FPS counter on SFML window
+		// Rendering SFML sprite on window & displaying changes
 		SFWindow.draw(renderingTarget.getSprite());
-		// Finally, displaying all buffered changes in SFML window
 		SFWindow.display();
 	}
 }
