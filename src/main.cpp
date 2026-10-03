@@ -24,6 +24,7 @@ int main() {
 
 	// Creating straightforward renderer that doesn't care about CPU/RAM bearing (like RGB565 or Indexed does)
 	SFMLRenderer renderer {};
+	renderer.setup();
 	renderer.setTarget(&renderingTarget);
 
 	// -------------------------------- Colors & fonts  --------------------------------
